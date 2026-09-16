@@ -1,0 +1,9 @@
+torch
+torchvision
+monai
+nibabel
+numpy
+pandas
+pyarrow
+matplotlib
+huggingface_hub

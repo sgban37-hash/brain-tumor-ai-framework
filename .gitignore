@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Datasets
+data/
+
+# Hugging Face cache
+.cache/
+**/.cache/
+
+# Generated outputs
+outputs/
+*.nii
+*.nii.gz
+
+# Model checkpoints
+*.pth
+*.pt
+*.ckpt
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+*.key
+*.pem

@@ -466,12 +466,42 @@ def main():
     )
 
     best_mean_dice = -1.0
+    resume_path = checkpoint_dir / "last_model.pth"
+
+    if resume_path.exists():
+        print(f"Resuming from checkpoint: {resume_path}")
+
+        checkpoint = torch.load(
+            resume_path,
+            map_location=device,
+            weights_only=False,
+        )
+
+        model.load_state_dict(checkpoint["model_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+        
+        if "scaler_state_dict" in checkpoint:
+            scaler.load_state_dict(checkpoint["scaler_state_dict"])
+        
+
+        start_epoch = checkpoint["epoch"]
+        best_mean_dice = checkpoint.get(
+            "best_mean_dice",
+            checkpoint.get("mean_dice", -1.0),
+        )
+
+        print(f"Resuming after epoch {start_epoch}")
+    else:
+        start_epoch = 0
+
 
     # ========================================================
     # TRAINING LOOP
     # ========================================================
 
     for epoch in range(
+        start_epoch,
         args.epochs
     ):
 
@@ -575,7 +605,10 @@ def main():
                     optimizer.state_dict(),
                 "scheduler_state_dict":
                     scheduler.state_dict(),
-                "loss": average_loss,
+                "scaler_state_dict":
+                scaler.state_dict(),
+            "loss": average_loss,
+            "best_mean_dice": best_mean_dice,
             },
             checkpoint_dir
             / "last_model.pth",

@@ -1,5 +1,6 @@
 
 import argparse
+import csv
 import sys
 import time
 from pathlib import Path
@@ -289,51 +290,55 @@ def main():
     )
 
     # --------------------------------------------------------
-    # Discover 10-case dataset
-    # --------------------------------------------------------
+    # Load the canonical deterministic MSD split manifest
+    manifest_path = Path(__file__).resolve().parents[1] / "outputs" / "msd_split_manifest.csv"
 
-    case_ids = sorted(
-        p.stem.replace(
-            ".nii",
-            ""
+    if not manifest_path.exists():
+        raise FileNotFoundError(
+            f"MSD split manifest not found: {manifest_path}"
         )
-        for p in image_dir.glob(
-            "*.nii.gz"
-        )
-    )
 
-    if len(case_ids) != 10:
+    with manifest_path.open("r", newline="", encoding="utf-8") as f:
+        split_rows = list(csv.DictReader(f))
 
+    required_columns = {"case_id", "split"}
+
+    if not split_rows or not required_columns.issubset(split_rows[0].keys()):
         raise RuntimeError(
-            f"Expected 10 cases, "
-            f"found {len(case_ids)}"
+            "MSD split manifest must contain 'case_id' and 'split' columns."
         )
 
-    # --------------------------------------------------------
-    # Deterministic 8/2 smoke-test split
-    # --------------------------------------------------------
+    train_ids = [
+        row["case_id"]
+        for row in split_rows
+        if row["split"] == "train"
+    ]
 
-    rng = np.random.default_rng(
-        seed
-    )
+    val_ids = [
+        row["case_id"]
+        for row in split_rows
+        if row["split"] == "validation"
+    ]
 
-    rng.shuffle(
-        case_ids
-    )
+    test_ids = [
+        row["case_id"]
+        for row in split_rows
+        if row["split"] == "internal_test"
+    ]
 
-    train_ids = case_ids[:8]
-    val_ids = case_ids[8:]
+    if len(train_ids) != 387 or len(val_ids) != 48 or len(test_ids) != 49:
+        raise RuntimeError(
+            f"Unexpected split sizes: "
+            f"train={len(train_ids)}, "
+            f"validation={len(val_ids)}, "
+            f"internal_test={len(test_ids)}"
+        )
 
-    print(
-        f"Training cases: {train_ids}"
-    )
+    print(f"Training cases: {len(train_ids)}")
+    print(f"Validation cases: {len(val_ids)}")
+    print(f"Internal test cases reserved: {len(test_ids)}")
 
-    print(
-        f"Validation cases: {val_ids}"
-    )
-
-    # --------------------------------------------------------
-    # Dataset
+   # Dataset
     # --------------------------------------------------------
 
     train_dataset = MSDDataset(
